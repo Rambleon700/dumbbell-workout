@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rack & Row — Adjustable Dumbbell Program</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root{
+    --iron:#14161A;
+    --iron-2:#1D2025;
+    --plate:#292D34;
+    --chalk:#EDEDE6;
+    --chalk-dim:#9BA0A8;
+    --brass:#C98A2C;
+    --brass-dim:#8A5E1E;
+    --steel:#4E7A8C;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--iron);
+    color:var(--chalk);
+    font-family:'Archivo',sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 0 60px;}
+
+  /* HERO */
+  header.hero{
+    position:relative;
+    padding:38px 20px 26px;
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 14px),
+      linear-gradient(180deg, #191c21, var(--iron));
+    border-bottom:3px solid var(--brass);
+    overflow:hidden;
+  }
+  .kicker{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.18em;
+    color:var(--brass);
+    text-transform:uppercase;
+    margin:0 0 10px;
+    font-weight:700;
+  }
+  h1.title{
+    font-family:'Archivo Black',sans-serif;
+    font-size:clamp(32px,8.5vw,48px);
+    line-height:0.92;
+    margin:0 0 14px;
+    letter-spacing:-0.01em;
+    text-transform:uppercase;
+  }
+  h1.title span{color:var(--brass);}
+  .hero-sub{
+    color:var(--chalk-dim);
+    font-size:15px;
+    line-height:1.5;
+    max-width:48ch;
+    margin:0;
+  }
+  .spec-row{
+    display:flex;
+    gap:0;
+    margin-top:22px;
+    border:1px solid var(--plate);
+  }
+  .spec{
+    flex:1;
+    padding:10px 12px;
+    border-right:1px solid var(--plate);
+  }
+  .spec:last-child{border-right:none;}
+  .spec-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--chalk-dim);
+    text-transform:uppercase;
+    letter-spacing:.1em;
+  }
+  .spec-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:700;
+    color:var(--chalk);
+    margin-top:2px;
+  }
+
+  /* TABS */
+  .tabs{
+    display:flex;
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:var(--iron);
+    border-bottom:1px solid var(--plate);
+  }
+  .tab-btn{
+    flex:1;
+    background:none;
+    border:none;
+    color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:700;
+    padding:16px 6px;
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+  }
+  .tab-btn.active{
+    color:var(--chalk);
+    border-bottom-color:var(--brass);
+  }
+
+  .view{display:none; padding:22px 16px 0;}
+  .view.active{display:block;}
+
+  /* EXERCISE LIST */
+  .group-head{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin:22px 0 10px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--plate);
+  }
+  .group-head:first-child{margin-top:0;}
+  .ex-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
+  .ex-card{
+    background:var(--iron-2);
+    border:1px solid var(--plate);
+    border-left:4px solid var(--steel);
+  }
+  .ex-head{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 14px;
+    cursor:pointer;
+  }
+  .ex-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--brass);
+    font-weight:700;
+    min-width:22px;
+  }
+  .ex-name{
+    flex:1;
+    font-size:16px;
+    font-weight:700;
+  }
+  .ex-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--chalk-dim);
+    text-transform:uppercase;
+    border:1px solid var(--plate);
+    padding:3px 6px;
+    letter-spacing:.05em;
+    white-space:nowrap;
+  }
+  .chevron{
+    color:var(--chalk-dim);
+    font-size:14px;
+    transition:transform .2s ease;
+  }
+  .ex-card.open .chevron{transform:rotate(180deg);}
+  .ex-body{
+    display:none;
+    padding:0 14px 18px;
+  }
+  .ex-card.open .ex-body{display:block;}
+  .ex-meta{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+  }
+  .meta-chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:700;
+    background:var(--plate);
+    padding:6px 10px;
+    color:var(--chalk);
+  }
+  .meta-chip.hot{background:var(--brass-dim); color:var(--chalk);}
+  .ex-cue{
+    font-size:14px;
+    line-height:1.55;
+    color:var(--chalk-dim);
+    margin:0;
+  }
+
+  /* WEEKLY PLAN */
+  .week-intro{
+    font-size:14px;
+    color:var(--chalk-dim);
+    line-height:1.6;
+    margin:0 0 20px;
+  }
+  .day-card{
+    border:1px solid var(--plate);
+    margin-bottom:14px;
+  }
+  .day-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 14px;
+    background:var(--iron-2);
+    border-bottom:1px solid var(--plate);
+  }
+  .day-name{
+    font-family:'Archivo Black',sans-serif;
+    font-size:15px;
+    text-transform:uppercase;
+  }
+  .day-focus{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--brass);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .day-rest{
+    padding:18px 14px;
+    color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.05em;
+  }
+  table.plan{
+    width:100%;
+    border-collapse:collapse;
+  }
+  table.plan td{
+    padding:9px 14px;
+    font-size:13.5px;
+    border-bottom:1px solid var(--iron);
+  }
+  table.plan tr:last-child td{border-bottom:none;}
+  table.plan td.pname{color:var(--chalk); font-weight:600;}
+  table.plan td.pset{
+    color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace;
+    text-align:right;
+    white-space:nowrap;
+  }
+  .note-box{
+    border:1px dashed var(--plate);
+    padding:14px;
+    margin-top:6px;
+    font-size:13px;
+    color:var(--chalk-dim);
+    line-height:1.6;
+  }
+  .note-box b{color:var(--chalk);}
+
+  /* LOG BOOK */
+  .log-form{
+    border:1px solid var(--plate);
+    padding:14px;
+    margin-bottom:22px;
+  }
+  .log-form-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .log-date-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--chalk-dim);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  input[type="date"]{
+    background:var(--iron-2);
+    border:1px solid var(--plate);
+    color:var(--chalk);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    padding:6px 8px;
+  }
+  .log-row{
+    border-bottom:1px dashed var(--plate);
+    padding-bottom:10px;
+    margin-bottom:10px;
+  }
+  .log-row:last-child{border-bottom:none; padding-bottom:0; margin-bottom:0;}
+  .log-row-ex{margin-bottom:6px;}
+  .log-row-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr 58px 26px;
+    gap:6px;
+    align-items:center;
+  }
+  .log-row select, .log-row input{
+    background:var(--iron-2);
+    border:1px solid var(--plate);
+    color:var(--chalk);
+    font-family:'Archivo',sans-serif;
+    font-size:13px;
+    padding:8px 6px;
+    width:100%;
+  }
+  .log-row input[type="number"]{
+    font-family:'JetBrains Mono',monospace;
+    text-align:center;
+  }
+  .log-row .db-select{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-align:center;
+    padding:8px 2px;
+  }
+  .log-row .rm-btn{
+    background:none;
+    border:1px solid var(--plate);
+    color:var(--chalk-dim);
+    font-size:14px;
+    padding:8px 0;
+    cursor:pointer;
+    line-height:1;
+  }
+  .log-col-labels{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr 58px 26px;
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .log-col-labels span{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    color:var(--chalk-dim);
+    text-transform:uppercase;
+    text-align:center;
+  }
+  .log-hint{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--chalk-dim);
+    margin:-2px 0 10px;
+  }
+  .add-row-btn{
+    width:100%;
+    background:var(--iron-2);
+    border:1px dashed var(--plate);
+    color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding:10px;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .log-actions{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+  }
+  .save-btn{
+    flex:1;
+    background:var(--brass);
+    border:none;
+    color:#1a1305;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    padding:12px;
+    cursor:pointer;
+  }
+  .log-day-total{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--chalk-dim);
+    text-align:right;
+    margin-top:10px;
+  }
+  .log-day-total b{color:var(--brass); font-size:14px;}
+
+  .history-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:12px;
+  }
+  .history-head h2{
+    font-family:'Archivo Black',sans-serif;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin:0;
+  }
+  .io-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:flex-end;
+  }
+  .io-btn{
+    background:var(--iron-2);
+    border:1px solid var(--plate);
+    color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding:8px 10px;
+    cursor:pointer;
+  }
+  .io-status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--brass);
+    text-align:right;
+    margin:-4px 0 14px;
+    min-height:14px;
+  }
+  .empty-log{
+    color:var(--chalk-dim);
+    font-size:13px;
+    padding:20px 0;
+    text-align:center;
+    border:1px dashed var(--plate);
+  }
+  .entry-card{
+    border:1px solid var(--plate);
+    margin-bottom:12px;
+  }
+  .entry-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    background:var(--iron-2);
+    border-bottom:1px solid var(--plate);
+  }
+  .entry-date{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+  }
+  .entry-vol{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--brass);
+  }
+  .entry-del{
+    background:none;
+    border:none;
+    color:var(--chalk-dim);
+    font-size:13px;
+    cursor:pointer;
+    margin-left:12px;
+  }
+  .entry-edit{
+    background:none;
+    border:none;
+    color:var(--brass);
+    font-size:13px;
+    cursor:pointer;
+    margin-left:12px;
+  }
+  table.entry-table{width:100%; border-collapse:collapse;}
+  table.entry-table td{
+    padding:8px 14px;
+    font-size:13px;
+    border-bottom:1px solid var(--iron);
+  }
+  table.entry-table tr:last-child td{border-bottom:none;}
+  table.entry-table td.ename{color:var(--chalk);}
+  table.entry-table td.estat{
+    color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace;
+    text-align:right;
+    white-space:nowrap;
+  }
+
+  /* STATS */
+  .stat-hero{
+    border:1px solid var(--plate);
+    padding:20px;
+    margin-bottom:20px;
+    text-align:center;
+    background:var(--iron-2);
+  }
+  .stat-hero-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--chalk-dim);
+    margin-bottom:6px;
+  }
+  .stat-hero-val{
+    font-family:'Archivo Black',sans-serif;
+    font-size:clamp(34px,10vw,48px);
+    color:var(--brass);
+    line-height:1;
+  }
+  .stat-hero-sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--chalk-dim);
+    margin-top:8px;
+  }
+  .chart-card{
+    border:1px solid var(--plate);
+    padding:14px;
+    margin-bottom:20px;
+  }
+  .chart-card h3{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin:0 0 14px;
+  }
+  .chart-wrap{
+    position:relative;
+  }
+  .bar-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:9px;
+  }
+  .bar-row:last-child{margin-bottom:0;}
+  .bar-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--chalk-dim);
+    width:88px;
+    min-width:88px;
+    text-align:right;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .bar-track{
+    flex:1;
+    background:var(--iron);
+    height:16px;
+    position:relative;
+    border:1px solid var(--plate);
+  }
+  .bar-fill{
+    display:block;
+    height:100%;
+    background:var(--brass);
+  }
+  .bar-value{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--chalk);
+    width:64px;
+    min-width:64px;
+    text-align:left;
+  }
+  .ex-bar-row .bar-label{
+    width:auto;
+    max-width:140px;
+    text-align:left;
+  }
+  svg.line-chart{width:100%; height:180px; display:block; overflow:visible;}
+  .stat-empty{
+    color:var(--chalk-dim);
+    font-size:13px;
+    padding:24px 0;
+    text-align:center;
+    border:1px dashed var(--plate);
+  }
+
+  footer.credit{
+    text-align:center;
+    padding:26px 16px 0;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--chalk-dim);
+  }
+
+  /* STATS (unused rules from stat-cards/chart-block variant removed) */
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <p class="kicker">Adjustable Dumbbell Program</p>
+    <h1 class="title">Rack &amp;<br><span>Row.</span></h1>
+    <p class="hero-sub">A full-body dumbbell system covering chest, back, lats, shoulders, arms, core and legs — built around a Push / Pull / Legs split.</p>
+    <div class="spec-row">
+      <div class="spec"><div class="spec-label">Load</div><div class="spec-val">3–25KG×2</div></div>
+      <div class="spec"><div class="spec-label">Moves</div><div class="spec-val">13</div></div>
+      <div class="spec"><div class="spec-label">Days/wk</div><div class="spec-val">3</div></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="exercises">Exercises</button>
+    <button class="tab-btn" data-tab="plan">Weekly Plan</button>
+    <button class="tab-btn" data-tab="log">Log Book</button>
+    <button class="tab-btn" data-tab="stats">Stats</button>
+  </div>
+
+  <!-- EXERCISES VIEW -->
+  <div class="view active" id="view-exercises">
+    <div id="groupedList"></div>
+  </div>
+
+  <!-- PLAN VIEW -->
+  <div class="view" id="view-plan">
+    <p class="week-intro">A Push / Pull / Legs split trained three times a week — every muscle group gets one direct session weekly. Rest at least a day between sessions where possible.</p>
+
+    <div class="day-card">
+      <div class="day-head"><span class="day-name">Monday — Push</span><span class="day-focus">Chest / Shoulders / Triceps</span></div>
+      <table class="plan" id="dayPush"></table>
+    </div>
+
+    <div class="day-card">
+      <div class="day-head"><span class="day-name">Tuesday</span></div>
+      <div class="day-rest">REST</div>
+    </div>
+
+    <div class="day-card">
+      <div class="day-head"><span class="day-name">Wednesday — Pull</span><span class="day-focus">Back / Lats / Biceps</span></div>
+      <table class="plan" id="dayPull"></table>
+    </div>
+
+    <div class="day-card">
+      <div class="day-head"><span class="day-name">Thursday</span></div>
+      <div class="day-rest">REST</div>
+    </div>
+
+    <div class="day-card">
+      <div class="day-head"><span class="day-name">Friday — Legs &amp; Core</span><span class="day-focus">Legs / Core</span></div>
+      <table class="plan" id="dayLegs"></table>
+    </div>
+
+    <div class="day-card">
+      <div class="day-head"><span class="day-name">Sat / Sun</span></div>
+      <div class="day-rest">REST — or light walking / stretching</div>
+    </div>
+
+    <div class="note-box">
+      <b>Picking a weight:</b> with 3–25kg adjustable dumbbells you've got room to grade each lift — heavier for compound presses/squats, lighter for isolation and raise work. Choose a weight per hand where the last 2 reps of a set are genuinely hard with good form.<br><br>
+      <b>Progression:</b> once you hit the top of a rep range for all sets with good form, add 1–2.5kg per hand next session.<br><br>
+      <b>Rest between sets:</b> 90s for big compound lifts (bench, row, squat, deadlift, overhead press), 45–60s for isolation moves (curls, raises, extensions, twists).
+    </div>
+  </div>
+
+  <!-- LOG BOOK VIEW -->
+  <div class="view" id="view-log">
+    <div class="log-form" id="logForm">
+      <div class="log-form-head">
+        <span class="log-date-label" id="logFormTitle">Session date</span>
+        <input type="date" id="logDate">
+      </div>
+
+      <div class="log-col-labels">
+        <span>Sets</span><span>Reps</span><span>Kg</span><span>DB</span><span></span>
+      </div>
+      <div class="log-hint">Kg is per dumbbell — set DB to 1 or 2 to match how the exercise is done. Type any exercise name (autocomplete suggests the 13 above, but custom names are fine). Volume is calculated automatically.</div>
+      <div id="logRows"></div>
+      <datalist id="exerciseDatalist"></datalist>
+      <button class="add-row-btn" id="addRowBtn">+ Add exercise</button>
+
+      <div class="log-actions">
+        <button class="save-btn" id="saveLogBtn">Save session</button>
+        <button class="io-btn" id="cancelEditBtn" style="display:none;">Cancel</button>
+      </div>
+      <div class="log-day-total" id="liveTotal">Session volume: <b>0 kg</b></div>
+    </div>
+
+    <div class="history-head">
+      <h2>Session History</h2>
+      <div class="io-row">
+        <button class="io-btn" id="exportBtn">Export JSON</button>
+        <button class="io-btn" id="importBtn">Import JSON</button>
+        <button class="io-btn" id="exportCsvBtn">Export CSV</button>
+        <button class="io-btn" id="importCsvBtn">Import CSV</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <input type="file" id="importCsvFile" accept=".csv,text/csv" style="display:none">
+      </div>
+    </div>
+    <div class="io-status" id="ioStatus"></div>
+    <div id="logHistory"></div>
+  </div>
+
+  <!-- STATS VIEW -->
+  <div class="view" id="view-stats">
+    <div class="stat-hero">
+      <div class="stat-hero-label">Total Kg Lifted (all-time)</div>
+      <div class="stat-hero-val" id="statTotalKg">0</div>
+      <div class="stat-hero-sub" id="statTotalSub">across 0 sessions</div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Cumulative Volume Over Time</h3>
+      <div class="chart-wrap" id="cumChartWrap"></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Kg Lifted By Day</h3>
+      <div class="chart-wrap" id="dayChartWrap"></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Kg Lifted By Exercise</h3>
+      <div class="chart-wrap" id="exChartWrap"></div>
+    </div>
+  </div>
+
+  <footer class="credit">Rack &amp; Row — adjustable dumbbell training</footer>
+</div>
+
+<script>
+const exercises = [
+  // PUSH
+  { name:"Flat Dumbbell Bench Press", tag:"Pectorals", group:"Push", sets:"4 × 8–10", weight:"12–20kg/db", dbCount:2,
+    cue:"Lie on a bench or the floor, press both dumbbells up over your chest until arms are extended, then lower with control until your elbows are just below shoulder height." },
+  { name:"Dumbbell Fly", tag:"Pectorals", group:"Push", sets:"3 × 12–15", weight:"6–10kg/db", dbCount:2,
+    cue:"Lying flat, arms slightly bent, lower the dumbbells out to the sides in a wide arc until you feel a stretch across your chest, then squeeze them back together above you." },
+  { name:"Seated Overhead Press", tag:"Shoulders", group:"Push", sets:"4 × 8–10", weight:"8–14kg/db", dbCount:2,
+    cue:"Seated or standing, press both dumbbells from shoulder height straight overhead without arching your lower back. Brace your core throughout." },
+  { name:"Lateral Raise", tag:"Shoulders", group:"Push", sets:"3 × 12–15", weight:"4–8kg/db", dbCount:2,
+    cue:"Slight bend in the elbows, raise both arms out to the sides to shoulder height, leading with your elbows. Control the descent — don't swing the weight up." },
+  { name:"Overhead Tricep Extension", tag:"Triceps", group:"Push", sets:"3 × 10–12", weight:"8–14kg", dbCount:1,
+    cue:"Hold one dumbbell with both hands behind your head, elbows pointing forward and close to your ears. Extend up to full lockout, then lower slowly behind your head." },
+
+  // PULL
+  { name:"Bent-Over Row", tag:"Back", group:"Pull", sets:"4 × 8–10", weight:"12–20kg/db", dbCount:2,
+    cue:"Hinge forward from the hips, flat back, dumbbells hanging below your shoulders. Pull both elbows back past your ribs, squeezing your shoulder blades together at the top." },
+  { name:"Single-Arm Row", tag:"Lats", group:"Pull", sets:"3 × 10–12 /side", weight:"12–22kg", dbCount:1,
+    cue:"One knee and hand on a bench for support, row the dumbbell up towards your hip, keeping your elbow close to your body and torso still. Feel it through the outer lat." },
+  { name:"Standing Bicep Curl", tag:"Biceps", group:"Pull", sets:"3 × 10–12", weight:"8–14kg/db", dbCount:2,
+    cue:"Elbows pinned to your sides, curl both dumbbells up to shoulder height without swinging your torso. Lower under control for a 2–3 second negative." },
+  { name:"Hammer Curl", tag:"Biceps / Forearms", group:"Pull", sets:"3 × 10–12", weight:"8–14kg/db", dbCount:2,
+    cue:"Same motion as a standard curl but with palms facing each other throughout. Targets the brachialis and forearms alongside the biceps." },
+
+  // LEGS & CORE
+  { name:"Goblet Squat", tag:"Legs", group:"Legs", sets:"4 × 10–12", weight:"16–25kg", dbCount:1,
+    cue:"Hold one dumbbell vertically at chest height by the top bell. Squat between your knees, chest up, until your thighs are at least parallel to the floor." },
+  { name:"Romanian Deadlift", tag:"Legs", group:"Legs", sets:"4 × 8–10", weight:"14–22kg/db", dbCount:2,
+    cue:"Soft knees, hinge at the hips and lower both dumbbells down the front of your legs, keeping them close to your body. Feel a stretch in your hamstrings, then drive your hips forward to stand." },
+  { name:"Walking Lunge", tag:"Legs", group:"Legs", sets:"3 × 10 /side", weight:"8–16kg/db", dbCount:2,
+    cue:"Dumbbells at your sides, step forward into a lunge until your back knee nearly touches the floor, then drive through the front foot into the next step." },
+  { name:"Weighted Russian Twist", tag:"Core", group:"Legs", sets:"3 × 15 /side", weight:"6–12kg", dbCount:1,
+    cue:"Seated, lean back slightly with feet off the floor or lightly grounded. Rotate the dumbbell from hip to hip with control, keeping your chest up rather than rounding forward." }
+];
+
+const groupOrder = ["Push","Pull","Legs"];
+const groupLabels = { Push:"Push — Chest / Shoulders / Triceps", Pull:"Pull — Back / Lats / Biceps", Legs:"Legs & Core" };
+
+const groupedList = document.getElementById('groupedList');
+let counter = 0;
+groupOrder.forEach(g => {
+  const heading = document.createElement('div');
+  heading.className = 'group-head';
+  heading.textContent = groupLabels[g];
+  groupedList.appendChild(heading);
+
+  const ul = document.createElement('ul');
+  ul.className = 'ex-list';
+  exercises.filter(e => e.group === g).forEach(ex => {
+    counter++;
+    const li = document.createElement('li');
+    li.className = 'ex-card';
+    li.innerHTML = `
+      <div class="ex-head">
+        <span class="ex-num">${String(counter).padStart(2,'0')}</span>
+        <span class="ex-name">${ex.name}</span>
+        <span class="ex-tag">${ex.tag}</span>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="ex-body">
+        <div class="ex-meta">
+          <span class="meta-chip hot">${ex.sets}</span>
+          <span class="meta-chip">${ex.weight}</span>
+          <span class="meta-chip">${ex.dbCount === 1 ? '1 dumbbell' : '2 dumbbells'}</span>
+        </div>
+        <p class="ex-cue">${ex.cue}</p>
+      </div>
+    `;
+    li.querySelector('.ex-head').addEventListener('click', () => li.classList.toggle('open'));
+    ul.appendChild(li);
+  });
+  groupedList.appendChild(ul);
+});
+
+// Weekly plan tables
+function fillTable(id, group){
+  const table = document.getElementById(id);
+  const rows = exercises.filter(e => e.group === group);
+  table.innerHTML = rows.map(r => `<tr><td class="pname">${r.name}</td><td class="pset">${r.sets}</td></tr>`).join('');
+}
+fillTable('dayPush', 'Push');
+fillTable('dayPull', 'Pull');
+fillTable('dayLegs', 'Legs');
+
+// ===== LOG BOOK =====
+const STORAGE_KEY = 'rackRowLog';
+const CUSTOM_EX_KEY = 'rackRowCustomExercises';
+const exerciseNames = exercises.map(e => e.name);
+
+function loadCustomExercises(){
+  try { return JSON.parse(localStorage.getItem(CUSTOM_EX_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveCustomExercises(list){
+  localStorage.setItem(CUSTOM_EX_KEY, JSON.stringify(list));
+}
+// Remembers any exercise name the user logs that isn't one of the 13
+// built-ins, so it autocompletes consistently next time instead of
+// risking a slightly different spelling that would split the Stats chart.
+function rememberCustomExercise(name){
+  if(!name || exerciseNames.includes(name)) return;
+  const custom = loadCustomExercises();
+  if(!custom.includes(name)){
+    custom.push(name);
+    saveCustomExercises(custom);
+    refreshExerciseDatalist();
+  }
+}
+function refreshExerciseDatalist(){
+  const all = [...exerciseNames, ...loadCustomExercises()];
+  document.getElementById('exerciseDatalist').innerHTML =
+    all.map(n => `<option value="${n.replace(/"/g,'&quot;')}"></option>`).join('');
+}
+refreshExerciseDatalist();
+
+// Accepts YYYY-MM-DD (passthrough), or D/M/YYYY-style strings (any of / . -
+// as separator) and converts to strict ISO YYYY-MM-DD. Two-number formats
+// are ambiguous — if one part is >12 it must be the day; otherwise assumed
+// DD/MM/YYYY. Returns null if the string can't be confidently parsed.
+function normalizeDate(raw){
+  if(!raw) return null;
+  const s = String(raw).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // already ISO
+
+  const m = s.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/);
+  if(m){
+    let [, a, b, year] = m;
+    a = parseInt(a,10); b = parseInt(b,10);
+    let day, month;
+    if(a > 12 && b <= 12){ day = a; month = b; }
+    else if(b > 12 && a <= 12){ day = b; month = a; }
+    else { day = a; month = b; } // ambiguous — assume DD/MM/YYYY
+    if(month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+
+  // last resort: let the engine try, but only accept if it round-trips sanely
+  const d = new Date(s);
+  if(!isNaN(d.getTime())){
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  return null;
+}
+
+function loadLog(){
+  let data;
+  try { data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch(e){ return []; }
+
+  // Self-heal any non-ISO dates left over from earlier imports so the
+  // Edit form and history list always agree on which session is which.
+  let healed = false;
+  data = data.filter(entry => {
+    if(!entry || !Array.isArray(entry.rows)) { healed = true; return false; }
+    const fixed = normalizeDate(entry.date);
+    if(!fixed){ healed = true; return false; } // drop unparseable entries
+    if(fixed !== entry.date){ entry.date = fixed; healed = true; }
+    return true;
+  });
+  if(healed) localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+  return data;
+}
+function saveLogData(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+const logRows = document.getElementById('logRows');
+const logDateInput = document.getElementById('logDate');
+logDateInput.value = new Date().toISOString().slice(0,10);
+
+function exerciseByName(name){
+  return exercises.find(e => e.name === name) || { dbCount: 2 };
+}
+
+function addLogRow(prefill){
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  const name = prefill && prefill.name ? prefill.name : exerciseNames[0];
+  const dbCount = prefill && prefill.dbCount ? prefill.dbCount : exerciseByName(name).dbCount;
+  row.innerHTML = `
+    <input type="text" class="ex-select log-row-ex" list="exerciseDatalist" value="${name.replace(/"/g,'&quot;')}" placeholder="Exercise name">
+    <div class="log-row-grid">
+      <input type="number" class="sets-in" min="0" value="${prefill?prefill.sets:3}">
+      <input type="number" class="reps-in" min="0" value="${prefill?prefill.reps:10}">
+      <input type="number" class="kg-in" min="0" step="0.5" value="${prefill?prefill.kg:10}">
+      <select class="db-select">
+        <option value="1" ${dbCount===1?'selected':''}>1 DB</option>
+        <option value="2" ${dbCount===2?'selected':''}>2 DB</option>
+      </select>
+      <button class="rm-btn" type="button">×</button>
+    </div>
+  `;
+  row.querySelector('.rm-btn').addEventListener('click', () => {
+    row.remove();
+    updateLiveTotal();
+  });
+  row.querySelectorAll('input[type="number"]').forEach(inp => inp.addEventListener('input', updateLiveTotal));
+  row.querySelector('.db-select').addEventListener('change', updateLiveTotal);
+  // only re-default the DB count when the typed name exactly matches one of
+  // our known exercises — leave custom/imported names' DB setting alone
+  row.querySelector('.ex-select').addEventListener('change', (e) => {
+    const match = exercises.find(ex => ex.name === e.target.value);
+    if(match) row.querySelector('.db-select').value = String(match.dbCount);
+    updateLiveTotal();
+  });
+  logRows.appendChild(row);
+  updateLiveTotal();
+}
+
+function rowVolume(row){
+  const sets = parseFloat(row.querySelector('.sets-in').value) || 0;
+  const reps = parseFloat(row.querySelector('.reps-in').value) || 0;
+  const kgPerDb = parseFloat(row.querySelector('.kg-in').value) || 0;
+  const dbCount = parseFloat(row.querySelector('.db-select').value) || 2;
+  return rowKg({ sets, reps, kg: kgPerDb, dbCount });
+}
+
+// Shared volume formula — respects whether the set used one or two dumbbells.
+// Falls back to 2 for older saved rows that predate the dbCount field.
+function rowKg(r){
+  const dbCount = r.dbCount || 2;
+  return (r.sets || 0) * (r.reps || 0) * (r.kg || 0) * dbCount;
+}
+
+function updateLiveTotal(){
+  let total = 0;
+  logRows.querySelectorAll('.log-row').forEach(r => total += rowVolume(r));
+  document.getElementById('liveTotal').innerHTML = `Session volume: <b>${total.toLocaleString()} kg</b>`;
+}
+
+document.getElementById('addRowBtn').addEventListener('click', () => addLogRow());
+
+let editingIndex = null;
+
+function setEditMode(idx, entry){
+  editingIndex = idx;
+  logDateInput.value = entry.date;
+  logRows.innerHTML = '';
+  entry.rows.forEach(r => addLogRow({ name:r.name, sets:r.sets, reps:r.reps, kg:r.kg, dbCount:r.dbCount || 2 }));
+  document.getElementById('logFormTitle').textContent = `Editing ${formatDate(entry.date)}`;
+  document.getElementById('saveLogBtn').textContent = 'Update session';
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  const formEl = document.getElementById('logForm');
+  if(formEl.scrollIntoView) formEl.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function exitEditMode(){
+  editingIndex = null;
+  document.getElementById('logFormTitle').textContent = 'Session date';
+  document.getElementById('saveLogBtn').textContent = 'Save session';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+document.getElementById('cancelEditBtn').addEventListener('click', () => {
+  exitEditMode();
+  logRows.innerHTML = '';
+  addLogRow();
+  logDateInput.value = new Date().toISOString().slice(0,10);
+});
+
+document.getElementById('saveLogBtn').addEventListener('click', () => {
+  const rows = [...logRows.querySelectorAll('.log-row')].map(r => ({
+    name: r.querySelector('.ex-select').value.trim(),
+    sets: parseFloat(r.querySelector('.sets-in').value) || 0,
+    reps: parseFloat(r.querySelector('.reps-in').value) || 0,
+    kg: parseFloat(r.querySelector('.kg-in').value) || 0,
+    dbCount: parseFloat(r.querySelector('.db-select').value) || 2
+  })).filter(r => r.sets && r.reps && r.name);
+
+  if(!rows.length){ return; }
+
+  rows.forEach(r => rememberCustomExercise(r.name));
+
+  const date = logDateInput.value;
+  const data = loadLog();
+  const wasEditing = editingIndex !== null && data[editingIndex];
+
+  if(wasEditing){
+    // pull the entry being edited out first, so it can cleanly re-fold below
+    data.splice(editingIndex, 1);
+  }
+
+  // fold into any existing entry on the same date instead of creating a duplicate card
+  const dupIdx = data.findIndex(en => en.date === date);
+  if(dupIdx > -1){
+    data[dupIdx] = { date, rows: [...data[dupIdx].rows, ...rows] };
+    flashStatus(wasEditing ? 'Updated and merged into the existing session for that date.' : 'Merged into the existing session for that date.');
+  } else {
+    data.push({ date, rows });
+    if(wasEditing) flashStatus('Session updated.');
+  }
+
+  data.sort((a,b) => b.date.localeCompare(a.date));
+  saveLogData(data);
+  renderHistory();
+
+  exitEditMode();
+  logRows.innerHTML = '';
+  addLogRow();
+  logDateInput.value = new Date().toISOString().slice(0,10);
+});
+
+function entryVolume(entry){
+  return entry.rows.reduce((sum, r) => sum + rowKg(r), 0);
+}
+
+function formatDate(iso){
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d.getTime())) return `Unrecognized date (${iso})`;
+  return d.toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+}
+
+function renderHistory(){
+  const data = loadLog();
+  const container = document.getElementById('logHistory');
+  if(!data.length){
+    container.innerHTML = '<div class="empty-log">No sessions logged yet. Add exercises above and save your first session.</div>';
+    return;
+  }
+  container.innerHTML = data.map((entry, idx) => `
+    <div class="entry-card">
+      <div class="entry-head">
+        <span class="entry-date">${formatDate(entry.date)}</span>
+        <span style="display:flex; align-items:center;">
+          <span class="entry-vol">${entryVolume(entry).toLocaleString()} kg</span>
+          <button class="entry-edit" data-idx="${idx}">Edit</button>
+          <button class="entry-del" data-idx="${idx}">Delete</button>
+        </span>
+      </div>
+      <table class="entry-table">
+        ${entry.rows.map(r => `
+          <tr>
+            <td class="ename">${r.name}</td>
+            <td class="estat">${r.sets} × ${r.reps} @ ${r.kg}kg × ${r.dbCount || 2} DB</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.entry-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const data = loadLog();
+      const idx = parseInt(btn.dataset.idx);
+      if(data[idx]) setEditMode(idx, data[idx]);
+    });
+  });
+
+  container.querySelectorAll('.entry-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const data = loadLog();
+      data.splice(idx, 1);
+      saveLogData(data);
+      if(editingIndex === idx){
+        exitEditMode();
+        logRows.innerHTML = '';
+        addLogRow();
+        logDateInput.value = new Date().toISOString().slice(0,10);
+      } else if(editingIndex !== null && idx < editingIndex){
+        editingIndex -= 1; // shift to keep pointing at the same session
+      }
+      renderHistory();
+    });
+  });
+}
+
+addLogRow();
+renderHistory();
+
+// Backfill: pick up any custom exercise names already sitting in saved
+// sessions from before this feature existed, so they're autocompleted too.
+loadLog().forEach(entry => entry.rows.forEach(r => rememberCustomExercise(r.name)));
+
+// ===== EXPORT / IMPORT =====
+const ioStatus = document.getElementById('ioStatus');
+function flashStatus(msg){
+  ioStatus.textContent = msg;
+  setTimeout(() => { if(ioStatus.textContent === msg) ioStatus.textContent = ''; }, 4000);
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const data = loadLog();
+  if(!data.length){ flashStatus('Nothing to export yet.'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `rack-row-log-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  flashStatus('Log exported.');
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try{
+      const imported = JSON.parse(evt.target.result);
+      if(!Array.isArray(imported)) throw new Error('bad format');
+      const valid = imported.filter(en => en && en.date && Array.isArray(en.rows));
+      if(!valid.length) throw new Error('no valid sessions');
+      mergeSessions(valid);
+    }catch(err){
+      flashStatus('Import failed — invalid file.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function mergeSessions(valid){
+  // normalize any incoming dates (handles hand-edited JSON with odd formats)
+  const cleaned = valid.map(en => {
+    const fixed = normalizeDate(en.date);
+    return fixed ? { ...en, date: fixed } : null;
+  }).filter(Boolean);
+
+  const existing = loadLog();
+  const existingKeys = new Set(existing.map(en => JSON.stringify(en)));
+  let added = 0;
+  cleaned.forEach(en => {
+    const key = JSON.stringify(en);
+    if(!existingKeys.has(key)){
+      existing.push(en);
+      existingKeys.add(key);
+      added++;
+    }
+  });
+  existing.sort((a,b) => b.date.localeCompare(a.date));
+  saveLogData(existing);
+  cleaned.forEach(en => en.rows.forEach(r => rememberCustomExercise(r.name)));
+  renderHistory();
+  flashStatus(added ? `Imported ${added} session(s).` : 'No new sessions found.');
+}
+
+// ---- CSV helpers ----
+function csvEscape(val){
+  const s = String(val);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+
+function sessionsToCsv(data){
+  const header = ['date','exercise','sets','reps','kg_per_db','dumbbells'];
+  const lines = [header.join(',')];
+  data.forEach(entry => {
+    entry.rows.forEach(r => {
+      lines.push([entry.date, r.name, r.sets, r.reps, r.kg, r.dbCount || 2].map(csvEscape).join(','));
+    });
+  });
+  return lines.join('\n');
+}
+
+function parseCsvLine(line){
+  const out = [];
+  let cur = '', inQuotes = false;
+  for(let i=0; i<line.length; i++){
+    const c = line[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(line[i+1] === '"'){ cur += '"'; i++; }
+        else inQuotes = false;
+      } else cur += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ out.push(cur); cur = ''; }
+      else cur += c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+function csvToSessions(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if(!lines.length) return [];
+  const header = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  const dateIdx = header.indexOf('date');
+  const nameIdx = header.indexOf('exercise');
+  const setsIdx = header.indexOf('sets');
+  const repsIdx = header.indexOf('reps');
+  const kgIdx = header.findIndex(h => h.startsWith('kg'));
+  const dbIdx = header.findIndex(h => h.startsWith('dumbbell') || h === 'db' || h === 'db_count');
+  if([dateIdx,nameIdx,setsIdx,repsIdx,kgIdx].includes(-1)) throw new Error('missing columns');
+
+  const byDate = {};
+  for(let i=1; i<lines.length; i++){
+    const cols = parseCsvLine(lines[i]);
+    if(cols.length < header.length) continue;
+    const date = normalizeDate(cols[dateIdx]);
+    if(!date) continue; // unparseable date — skip rather than corrupt a session
+    const dbRaw = dbIdx > -1 ? parseFloat(cols[dbIdx]) : 2;
+    const row = {
+      name: cols[nameIdx].trim(),
+      sets: parseFloat(cols[setsIdx]) || 0,
+      reps: parseFloat(cols[repsIdx]) || 0,
+      kg: parseFloat(cols[kgIdx]) || 0,
+      dbCount: (dbRaw === 1 || dbRaw === 2) ? dbRaw : 2
+    };
+    if(!row.name || !row.sets || !row.reps) continue;
+    (byDate[date] = byDate[date] || []).push(row);
+  }
+  return Object.keys(byDate).map(date => ({ date, rows: byDate[date] }));
+}
+
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  const data = loadLog();
+  if(!data.length){ flashStatus('Nothing to export yet.'); return; }
+  const csv = sessionsToCsv(data);
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `rack-row-log-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  flashStatus('CSV exported.');
+});
+
+document.getElementById('importCsvBtn').addEventListener('click', () => {
+  document.getElementById('importCsvFile').click();
+});
+
+document.getElementById('importCsvFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try{
+      const sessions = csvToSessions(evt.target.result);
+      if(!sessions.length) throw new Error('no valid rows');
+      mergeSessions(sessions);
+    }catch(err){
+      flashStatus('CSV import failed — check columns.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ===== STATS =====
+
+function computeStats(){
+  const data = loadLog();
+  let total = 0;
+  const byDayMap = {};
+  const byExMap = {};
+
+  const sorted = [...data].sort((a,b) => a.date.localeCompare(b.date));
+  sorted.forEach(entry => {
+    const vol = entryVolume(entry);
+    total += vol;
+    byDayMap[entry.date] = (byDayMap[entry.date] || 0) + vol;
+    entry.rows.forEach(r => {
+      byExMap[r.name] = (byExMap[r.name] || 0) + rowKg(r);
+    });
+  });
+
+  const days = Object.keys(byDayMap).sort();
+  let running = 0;
+  const cumulative = days.map(d => { running += byDayMap[d]; return running; });
+
+  const exEntries = Object.entries(byExMap).sort((a,b) => b[1]-a[1]);
+
+  return {
+    total,
+    sessionCount: data.length,
+    days,
+    dayValues: days.map(d => byDayMap[d]),
+    cumulative,
+    exLabels: exEntries.map(e => e[0]),
+    exValues: exEntries.map(e => e[1])
+  };
+}
+
+function shortDate(iso){
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { day:'numeric', month:'short' });
+}
+
+// Simple horizontal bar list -- no external dependency
+function renderBarChart(container, labels, values, opts){
+  opts = opts || {};
+  const max = Math.max(...values, 1);
+  container.innerHTML = labels.map((label, i) => `
+    <div class="bar-row${opts.exStyle ? ' ex-bar-row' : ''}">
+      <span class="bar-label" title="${label}">${opts.exStyle ? label : shortDate(label)}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${(values[i]/max*100).toFixed(1)}%"></span></span>
+      <span class="bar-value">${values[i].toLocaleString()}kg</span>
+    </div>
+  `).join('');
+}
+
+// Simple SVG line/area chart -- no external dependency
+function renderLineChart(container, labels, values){
+  const W = 600, H = 160, PAD = 8;
+  const max = Math.max(...values, 1);
+  const min = 0;
+  const stepX = labels.length > 1 ? (W - PAD*2) / (labels.length - 1) : 0;
+  const points = values.map((v, i) => {
+    const x = PAD + stepX * i;
+    const y = H - PAD - ((v - min) / (max - min || 1)) * (H - PAD*2);
+    return [x, y];
+  });
+  const pointsStr = points.map(p => p.join(',')).join(' ');
+  const areaStr = `${PAD},${H-PAD} ` + pointsStr + ` ${PAD + stepX*(labels.length-1)},${H-PAD}`;
+
+  const firstLabel = labels.length ? shortDate(labels[0]) : '';
+  const lastLabel = labels.length ? shortDate(labels[labels.length-1]) : '';
+
+  container.innerHTML = `
+    <svg class="line-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polygon points="${areaStr}" fill="var(--brass-dim)" opacity="0.25"></polygon>
+      <polyline points="${pointsStr}" fill="none" stroke="var(--brass)" stroke-width="2" vector-effect="non-scaling-stroke"></polyline>
+      ${points.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="var(--brass)"></circle>`).join('')}
+    </svg>
+    <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--chalk-dim); margin-top:4px;">
+      <span>${firstLabel}</span><span>${lastLabel}</span>
+    </div>
+  `;
+}
+
+function renderStats(){
+  const s = computeStats();
+  document.getElementById('statTotalKg').textContent = s.total.toLocaleString();
+  document.getElementById('statTotalSub').textContent = `across ${s.sessionCount} session${s.sessionCount===1?'':'s'}`;
+
+  const cumWrap = document.getElementById('cumChartWrap');
+  const dayWrap = document.getElementById('dayChartWrap');
+  const exWrap = document.getElementById('exChartWrap');
+
+  if(!s.days.length){
+    const empty = '<div class="stat-empty">No sessions logged yet.</div>';
+    cumWrap.innerHTML = empty;
+    dayWrap.innerHTML = empty;
+    exWrap.innerHTML = empty;
+    return;
+  }
+
+  renderLineChart(cumWrap, s.days, s.cumulative);
+  renderBarChart(dayWrap, s.days, s.dayValues);
+  renderBarChart(exWrap, s.exLabels, s.exValues, { exStyle:true });
+}
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'stats') renderStats();
+  });
+});
+</script>
+</body>
+</html>
