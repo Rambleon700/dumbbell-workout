@@ -327,7 +327,6 @@
         <div id="emptyHistory" class="empty" style="display:none;">No entries yet. Log your first workout!</div>
       </div>
 
-      <!-- Volume by Muscle Group -->
       <div class="card">
         <h2>💪 Volume by Muscle Group</h2>
         <div class="stats" id="muscleStats"></div>
@@ -349,7 +348,6 @@
         <div id="emptyMuscle" class="empty" style="display:none;">No data yet.</div>
       </div>
 
-      <!-- Weekly Volume -->
       <div class="card">
         <h2>📅 Weekly Training Volume</h2>
         <p style="color:var(--muted); font-size:0.9rem; margin-bottom:1rem;">
@@ -543,7 +541,6 @@
       document.getElementById('date').value = new Date().toISOString().slice(0, 10);
     }
 
-    // ========== PROFILE ==========
     function loadProfile() {
       try {
         const raw = localStorage.getItem(PROFILE_KEY);
@@ -582,17 +579,13 @@
       return parseFloat(document.getElementById('userWeight').value) || 89;
     }
 
-    // ========== CALORIE ESTIMATION ==========
     function estimateCalories(entry) {
       const totalReps = entry.sets * entry.reps;
-      const dbKg = entry.weight; // per dumbbell
+      const dbKg = entry.weight;
       const bodyKg = getBodyWeightKg();
       const BW_lb = bodyKg * 2.20462;
       const DB_lb = dbKg * 2.20462;
-
-      // Same base style as kettlebell formula
       let base = totalReps * (0.00155 * BW_lb + 0.0115 * DB_lb);
-
       const ex = (entry.exercise || '').toLowerCase();
       let M = 1.0;
       if (ex.includes('bench press') || ex.includes('goblet squat')) M = 1.15;
@@ -603,7 +596,6 @@
       else if (ex.includes('tricep') || ex.includes('skull')) M = 0.85;
       else if (ex.includes('custom')) M = 0.95;
       else M = 0.95;
-
       return Math.max(1, Math.round(base * M));
     }
 
@@ -695,7 +687,7 @@
         saveEntries();
         renderAll();
         updateSessionCals();
-        showToast(`Entry saved! ~${entry.calories} kcal`);
+        showToast('Entry saved! ~' + entry.calories + ' kcal');
         document.getElementById('entryForm').reset();
         setDefaultDate();
         document.querySelector('.weight-btn[data-weight="8.5"]:not(.rm-weight-btn)').click();
@@ -717,7 +709,6 @@
       }
     }
 
-    // ===== MUSCLE VOLUME =====
     function renderMuscleVolume() {
       const byMuscle = {};
       let totalVol = 0;
@@ -730,7 +721,6 @@
         byMuscle[m].count += 1;
         totalVol += e.volume;
       });
-
       const sorted = Object.entries(byMuscle).sort((a, b) => b[1].volume - a[1].volume);
       const statsEl = document.getElementById('muscleStats');
       if (sorted.length === 0) {
@@ -740,32 +730,22 @@
         return;
       }
       document.getElementById('emptyMuscle').style.display = 'none';
-
-      statsEl.innerHTML = sorted.slice(0, 4).map(([muscle, d]) => `
-        <div class="stat">
-          <div class="value">${Math.round(d.volume).toLocaleString()}</div>
-          <div class="label">${muscle}</div>
-        </div>
-      `).join('');
-
+      statsEl.innerHTML = sorted.slice(0, 4).map(([muscle, d]) =>
+        '<div class="stat"><div class="value">' + Math.round(d.volume).toLocaleString() + '</div><div class="label">' + muscle + '</div></div>'
+      ).join('');
       const tbody = document.getElementById('muscleTableBody');
       tbody.innerHTML = '';
       sorted.forEach(([muscle, d]) => {
         const pct = totalVol > 0 ? ((d.volume / totalVol) * 100).toFixed(1) : 0;
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><span class="muscle-badge">${muscle}</span></td>
-          <td>${d.count}</td>
-          <td>${d.sets}</td>
-          <td>${d.reps}</td>
-          <td class="volume">${Math.round(d.volume).toLocaleString()}</td>
-          <td>${pct}%</td>
-        `;
+        tr.innerHTML =
+          '<td><span class="muscle-badge">' + muscle + '</span></td>' +
+          '<td>' + d.count + '</td><td>' + d.sets + '</td><td>' + d.reps + '</td>' +
+          '<td class="volume">' + Math.round(d.volume).toLocaleString() + '</td><td>' + pct + '%</td>';
         tbody.appendChild(tr);
       });
     }
 
-    // ===== WEEKLY VOLUME =====
     function getWeekKey(dateStr) {
       const d = new Date(dateStr + 'T00:00:00');
       const day = d.getDay() || 7;
@@ -773,12 +753,12 @@
       const year = d.getFullYear();
       const oneJan = new Date(year, 0, 1);
       const weekNum = Math.ceil((((d - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
-      return `${year}-W${String(weekNum).padStart(2, '0')}`;
+      return year + '-W' + String(weekNum).padStart(2, '0');
     }
 
     function getWeekLabel(weekKey) {
-      const [year, w] = weekKey.split('-W');
-      return `Week ${parseInt(w, 10)}, ${year}`;
+      const parts = weekKey.split('-W');
+      return 'Week ' + parseInt(parts[1], 10) + ', ' + parts[0];
     }
 
     function getCurrentWeekKey() {
@@ -795,54 +775,35 @@
         byWeek[key].reps += e.sets * e.reps;
         byWeek[key].count += 1;
       });
-
       const sortedWeeks = Object.keys(byWeek).sort().reverse();
       const currentKey = getCurrentWeekKey();
       const thisWeek = byWeek[currentKey] || { volume: 0, sets: 0, reps: 0, count: 0 };
       const prevKey = sortedWeeks.find(k => k < currentKey);
       const lastWeek = prevKey ? byWeek[prevKey] : { volume: 0, sets: 0, reps: 0, count: 0 };
 
-      document.getElementById('weeklyStats').innerHTML = `
-        <div class="stat highlight">
-          <div class="value">${Math.round(thisWeek.volume).toLocaleString()}</div>
-          <div class="label">This Week Volume</div>
-        </div>
-        <div class="stat">
-          <div class="value">${Math.round(lastWeek.volume).toLocaleString()}</div>
-          <div class="label">Last Week Volume</div>
-        </div>
-        <div class="stat">
-          <div class="value">${thisWeek.sets}</div>
-          <div class="label">This Week Sets</div>
-        </div>
-        <div class="stat">
-          <div class="value">${thisWeek.count}</div>
-          <div class="label">This Week Entries</div>
-        </div>
-      `;
+      document.getElementById('weeklyStats').innerHTML =
+        '<div class="stat highlight"><div class="value">' + Math.round(thisWeek.volume).toLocaleString() + '</div><div class="label">This Week Volume</div></div>' +
+        '<div class="stat"><div class="value">' + Math.round(lastWeek.volume).toLocaleString() + '</div><div class="label">Last Week Volume</div></div>' +
+        '<div class="stat"><div class="value">' + thisWeek.sets + '</div><div class="label">This Week Sets</div></div>' +
+        '<div class="stat"><div class="value">' + thisWeek.count + '</div><div class="label">This Week Entries</div></div>';
 
       const tbody = document.getElementById('weeklyTableBody');
       const empty = document.getElementById('emptyWeekly');
       tbody.innerHTML = '';
       if (sortedWeeks.length === 0) { empty.style.display = 'block'; return; }
       empty.style.display = 'none';
-
       sortedWeeks.forEach(key => {
         const w = byWeek[key];
         const tr = document.createElement('tr');
         if (key === currentKey) tr.style.background = 'rgba(155, 89, 182, 0.12)';
-        tr.innerHTML = `
-          <td>${getWeekLabel(key)}${key === currentKey ? ' (current)' : ''}</td>
-          <td>${w.count}</td>
-          <td>${w.sets}</td>
-          <td>${w.reps}</td>
-          <td class="volume">${Math.round(w.volume).toLocaleString()}</td>
-        `;
+        tr.innerHTML =
+          '<td>' + getWeekLabel(key) + (key === currentKey ? ' (current)' : '') + '</td>' +
+          '<td>' + w.count + '</td><td>' + w.sets + '</td><td>' + w.reps + '</td>' +
+          '<td class="volume">' + Math.round(w.volume).toLocaleString() + '</td>';
         tbody.appendChild(tr);
       });
     }
 
-    // ===== 1RM + % =====
     function setupRmCalculator() {
       document.querySelectorAll('.rm-weight-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -902,22 +863,20 @@
       ];
       const tbody = document.getElementById('pctTableBody');
       tbody.innerHTML = '';
-      percentages.forEach(({ pct, use }) => {
-        const exact = trainingMax * (pct / 100);
+      percentages.forEach(function(item) {
+        const exact = trainingMax * (item.pct / 100);
         const tr = document.createElement('tr');
-        if (pct === 100) tr.classList.add('highlight');
-        tr.innerHTML = `
-          <td><strong>${pct}%</strong></td>
-          <td>${exact.toFixed(1)}</td>
-          <td>${nearestWeight(exact)} kg</td>
-          <td style="text-align:left; font-size:0.85rem; color:var(--muted);">${use}</td>
-        `;
+        if (item.pct === 100) tr.classList.add('highlight');
+        tr.innerHTML =
+          '<td><strong>' + item.pct + '%</strong></td>' +
+          '<td>' + exact.toFixed(1) + '</td>' +
+          '<td>' + nearestWeight(exact) + ' kg</td>' +
+          '<td style="text-align:left; font-size:0.85rem; color:var(--muted);">' + item.use + '</td>';
         tbody.appendChild(tr);
       });
       document.getElementById('pctTableWrap').style.display = 'block';
     }
 
-    // ===== RENDER =====
     function renderAll() {
       populateExerciseFilters();
       renderHistory();
@@ -982,31 +941,27 @@
       const totalSets = filtered.reduce((s, e) => s + e.sets, 0);
       const totalReps = filtered.reduce((s, e) => s + e.sets * e.reps, 0);
       const totalCals = filtered.reduce((s, e) => s + (e.calories || estimateCalories(e)), 0);
-      document.getElementById('historyStats').innerHTML = `
-        <div class="stat"><div class="value">${filtered.length}</div><div class="label">Entries</div></div>
-        <div class="stat"><div class="value">${totalSets}</div><div class="label">Total Sets</div></div>
-        <div class="stat"><div class="value">${totalReps}</div><div class="label">Total Reps</div></div>
-        <div class="stat"><div class="value">${Math.round(totalVol).toLocaleString()}</div><div class="label">Volume (kg)</div></div>
-        <div class="stat cals-stat"><div class="value">${totalCals}</div><div class="label">Est. kcal</div></div>
-      `;
+      document.getElementById('historyStats').innerHTML =
+        '<div class="stat"><div class="value">' + filtered.length + '</div><div class="label">Entries</div></div>' +
+        '<div class="stat"><div class="value">' + totalSets + '</div><div class="label">Total Sets</div></div>' +
+        '<div class="stat"><div class="value">' + totalReps + '</div><div class="label">Total Reps</div></div>' +
+        '<div class="stat"><div class="value">' + Math.round(totalVol).toLocaleString() + '</div><div class="label">Volume (kg)</div></div>' +
+        '<div class="stat cals-stat"><div class="value">' + totalCals + '</div><div class="label">Est. kcal</div></div>';
 
       filtered.forEach(e => {
         const muscle = e.muscle || getMuscle(e.exercise);
         const cals = e.calories || estimateCalories(e);
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${formatDate(e.date)}</td>
-          <td>${escapeHtml(e.exercise)}</td>
-          <td><span class="muscle-badge">${muscle}</span></td>
-          <td>${e.weight} kg</td>
-          <td>${e.sets} × ${e.reps}</td>
-          <td class="volume">${Math.round(e.volume).toLocaleString()}</td>
-          <td class="cals">${cals}</td>
-          <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(e.notes || '')}">${escapeHtml(e.notes || '—')}</td>
-          <td class="actions">
-            <button class="btn btn-danger btn-sm" data-id="${e.id}" title="Delete">✕</button>
-          </td>
-        `;
+        tr.innerHTML =
+          '<td>' + formatDate(e.date) + '</td>' +
+          '<td>' + escapeHtml(e.exercise) + '</td>' +
+          '<td><span class="muscle-badge">' + muscle + '</span></td>' +
+          '<td>' + e.weight + ' kg</td>' +
+          '<td>' + e.sets + ' × ' + e.reps + '</td>' +
+          '<td class="volume">' + Math.round(e.volume).toLocaleString() + '</td>' +
+          '<td class="cals">' + cals + '</td>' +
+          '<td style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escapeHtml(e.notes || '') + '">' + escapeHtml(e.notes || '—') + '</td>' +
+          '<td class="actions"><button class="btn btn-danger btn-sm" data-id="' + e.id + '" title="Delete">✕</button></td>';
         tbody.appendChild(tr);
       });
 
@@ -1095,9 +1050,9 @@
       exerciseChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: sorted.map(([ex]) => ex),
+          labels: sorted.map(function(x) { return x[0]; }),
           datasets: [{
-            label: 'Total Volume (kg)', data: sorted.map(([, v]) => Math.round(v)),
+            label: 'Total Volume (kg)', data: sorted.map(function(x) { return Math.round(x[1]); }),
             backgroundColor: 'rgba(52,152,219,0.7)', borderColor: '#3498db', borderWidth: 1
           }]
         },
@@ -1120,25 +1075,20 @@
       });
       const sorted = Object.entries(byMuscle).sort((a, b) => b[1] - a[1]);
       const colors = [
-        'rgba(231, 76, 60, 0.75)',
-        'rgba(52, 152, 219, 0.75)',
-        'rgba(241, 196, 15, 0.75)',
-        'rgba(46, 204, 113, 0.75)',
-        'rgba(155, 89, 182, 0.75)',
-        'rgba(230, 126, 34, 0.75)',
-        'rgba(26, 188, 156, 0.75)',
-        'rgba(149, 165, 166, 0.75)'
+        'rgba(231, 76, 60, 0.75)', 'rgba(52, 152, 219, 0.75)', 'rgba(241, 196, 15, 0.75)',
+        'rgba(46, 204, 113, 0.75)', 'rgba(155, 89, 182, 0.75)', 'rgba(230, 126, 34, 0.75)',
+        'rgba(26, 188, 156, 0.75)', 'rgba(149, 165, 166, 0.75)'
       ];
       const ctx = document.getElementById('muscleChart').getContext('2d');
       if (muscleChart) muscleChart.destroy();
       muscleChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: sorted.map(([m]) => m),
+          labels: sorted.map(function(x) { return x[0]; }),
           datasets: [{
             label: 'Total Volume (kg)',
-            data: sorted.map(([, v]) => Math.round(v)),
-            backgroundColor: sorted.map((_, i) => colors[i % colors.length]),
+            data: sorted.map(function(x) { return Math.round(x[1]); }),
+            backgroundColor: sorted.map(function(_, i) { return colors[i % colors.length]; }),
             borderWidth: 0
           }]
         },
@@ -1166,7 +1116,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `dumbbell-logbook-${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = 'dumbbell-logbook-' + new Date().toISOString().slice(0, 10) + '.json';
         a.click();
         URL.revokeObjectURL(url);
         showToast('JSON exported!');
@@ -1199,7 +1149,7 @@
               return entry;
             });
           if (imported.length === 0) { showToast('No valid entries found', true); return; }
-          const mode = confirm(`Found ${imported.length} entries.\n\nOK = Merge\nCancel = Replace all`);
+          const mode = confirm('Found ' + imported.length + ' entries.\n\nOK = Merge\nCancel = Replace all');
           if (mode) {
             const ids = new Set(entries.map(e => e.id));
             imported.forEach(e => { if (!ids.has(e.id)) entries.push(e); });
@@ -1207,7 +1157,7 @@
           saveEntries();
           renderAll();
           updateSessionCals();
-          showToast(`Imported ${imported.length} entries`);
+          showToast('Imported ' + imported.length + ' entries');
         } catch (err) { showToast('Import failed: invalid JSON', true); }
         e.target.value = '';
       });
@@ -1225,15 +1175,15 @@
 
     function updateDataInfo() {
       document.getElementById('dataInfo').textContent = entries.length
-        ? `${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} stored • Last updated: ${new Date().toLocaleString()}`
+        ? entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies') + ' stored • Last updated: ' + new Date().toLocaleString()
         : 'No data stored yet.';
     }
 
-    function showToast(msg, isError = false) {
+    function showToast(msg, isError) {
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.className = 'toast show' + (isError ? ' error' : '');
-      setTimeout(() => t.classList.remove('show'), 2800);
+      setTimeout(function() { t.classList.remove('show'); }, 2800);
     }
 
     init();
