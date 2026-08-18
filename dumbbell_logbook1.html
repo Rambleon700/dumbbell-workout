@@ -92,6 +92,7 @@
     th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
     tr:hover td { background: rgba(155, 89, 182, 0.08); }
     .volume { color: var(--success); font-weight: 600; }
+    .cals { color: #f1c40f; font-weight: 600; }
     .actions { display: flex; gap: 0.4rem; }
     .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 6px; }
     .empty { text-align: center; padding: 2rem; color: var(--muted); }
@@ -111,11 +112,12 @@
     .stat .value { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
     .stat .label { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
     .stat.highlight .value { color: var(--success); }
+    .stat.cals-stat .value { color: #f1c40f; }
     .toast {
       position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
       background: var(--success); color: #fff; padding: 0.75rem 1.5rem;
       border-radius: 8px; font-weight: 600; opacity: 0; pointer-events: none;
-      transition: opacity 0.3s; z-index: 100;
+      transition: opacity 0.3s; z-index: 100; max-width: 90%; text-align: center;
     }
     .toast.show { opacity: 1; }
     .toast.error { background: var(--danger); }
@@ -139,13 +141,29 @@
       font-size: 0.75rem; font-weight: 600; background: rgba(155, 89, 182, 0.25);
       color: #d2b4de;
     }
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .session-cals {
+      background: rgba(241, 196, 15, 0.12);
+      border: 1px solid #f1c40f;
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 1.05rem;
+    }
+    .session-cals strong { color: #f1c40f; font-size: 1.3rem; }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
       <h1>🏋️ Dumbbell Logbook</h1>
-      <p>3 kg • 8.5 kg • 14 kg • 19.5 kg • 25 kg • Track sets, reps &amp; progress</p>
+      <p>3 kg • 8.5 kg • 14 kg • 19.5 kg • 25 kg • Track sets, reps, volume &amp; calories</p>
     </header>
 
     <div class="tabs">
@@ -158,6 +176,25 @@
 
     <!-- LOG WORKOUT -->
     <div id="log" class="panel active">
+      <div class="card">
+        <h2>👤 Your Profile (for calorie estimates)</h2>
+        <div class="profile-grid">
+          <div>
+            <label for="userAge">Age</label>
+            <input type="number" id="userAge" min="15" max="100" value="64">
+          </div>
+          <div>
+            <label for="userHeight">Height (cm)</label>
+            <input type="number" id="userHeight" min="100" max="250" value="178">
+          </div>
+          <div>
+            <label for="userWeight">Weight (kg)</label>
+            <input type="number" id="userWeight" min="30" max="250" step="0.1" value="89">
+          </div>
+        </div>
+        <p style="color:var(--muted); font-size:0.85rem; margin-bottom:0;">Calories are estimates based on reps, dumbbell weight and your body weight. Pace &amp; form also matter.</p>
+      </div>
+
       <div class="card">
         <h2>➕ Add Entry</h2>
         <form id="entryForm">
@@ -225,6 +262,10 @@
             <button type="reset" class="btn btn-ghost">Clear</button>
           </div>
         </form>
+
+        <div id="sessionCals" class="session-cals" style="display:none;">
+          Today’s estimated calories from logged exercises: <strong id="sessionCalsValue">0</strong> kcal
+        </div>
       </div>
     </div>
 
@@ -275,6 +316,7 @@
                 <th>Weight</th>
                 <th>Sets × Reps</th>
                 <th>Volume</th>
+                <th>kcal</th>
                 <th>Notes</th>
                 <th></th>
               </tr>
@@ -346,6 +388,7 @@
               <option value="volume">Total Volume (kg)</option>
               <option value="reps">Total Reps</option>
               <option value="sets">Total Sets</option>
+              <option value="calories">Estimated Calories</option>
             </select>
           </div>
         </div>
@@ -445,16 +488,16 @@
       </div>
     </div>
 
-    <footer>Dumbbell Logbook • Data stored locally in your browser</footer>
+    <footer>Dumbbell Logbook • Data stored locally in your browser • Calories are estimates</footer>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
     const STORAGE_KEY = 'dumbbell_logbook_v1';
+    const PROFILE_KEY = 'dumbbell_profile_v1';
     const AVAILABLE_WEIGHTS = [3, 8.5, 14, 19.5, 25];
 
-    // Primary muscle group mapping
     const MUSCLE_MAP = {
       'Bench Fly': 'Chest',
       'Bench Press': 'Chest',
@@ -482,6 +525,7 @@
 
     function init() {
       loadEntries();
+      loadProfile();
       setDefaultDate();
       setupTabs();
       setupWeightButtons();
@@ -490,11 +534,77 @@
       setupExportImport();
       setupRmCalculator();
       setupPercentageCalculator();
+      setupProfile();
       renderAll();
+      updateSessionCals();
     }
 
     function setDefaultDate() {
       document.getElementById('date').value = new Date().toISOString().slice(0, 10);
+    }
+
+    // ========== PROFILE ==========
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        if (raw) {
+          const p = JSON.parse(raw);
+          if (p.age) document.getElementById('userAge').value = p.age;
+          if (p.height) document.getElementById('userHeight').value = p.height;
+          if (p.weight) document.getElementById('userWeight').value = p.weight;
+        }
+      } catch (e) {}
+    }
+
+    function saveProfile() {
+      const profile = {
+        age: parseFloat(document.getElementById('userAge').value) || 64,
+        height: parseFloat(document.getElementById('userHeight').value) || 178,
+        weight: parseFloat(document.getElementById('userWeight').value) || 89
+      };
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      return profile;
+    }
+
+    function setupProfile() {
+      ['userAge', 'userHeight', 'userWeight'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+          saveProfile();
+          entries.forEach(e => { e.calories = estimateCalories(e); });
+          saveEntries();
+          renderAll();
+          updateSessionCals();
+        });
+      });
+    }
+
+    function getBodyWeightKg() {
+      return parseFloat(document.getElementById('userWeight').value) || 89;
+    }
+
+    // ========== CALORIE ESTIMATION ==========
+    function estimateCalories(entry) {
+      const totalReps = entry.sets * entry.reps;
+      const dbKg = entry.weight; // per dumbbell
+      const bodyKg = getBodyWeightKg();
+      const BW_lb = bodyKg * 2.20462;
+      const DB_lb = dbKg * 2.20462;
+
+      // Same base style as kettlebell formula
+      let base = totalReps * (0.00155 * BW_lb + 0.0115 * DB_lb);
+
+      const ex = (entry.exercise || '').toLowerCase();
+      let M = 1.0;
+      if (ex.includes('bench press') || ex.includes('goblet squat')) M = 1.15;
+      else if (ex.includes('shoulder press') || ex.includes('overhead press')) M = 1.10;
+      else if (ex.includes('row') || ex.includes('upright')) M = 1.05;
+      else if (ex.includes('fly') || ex.includes('shrug')) M = 0.90;
+      else if (ex.includes('curl') || ex.includes('preacher') || ex.includes('hammer')) M = 0.85;
+      else if (ex.includes('tricep') || ex.includes('skull')) M = 0.85;
+      else if (ex.includes('custom')) M = 0.95;
+      else M = 0.95;
+
+      return Math.max(1, Math.round(base * M));
     }
 
     function loadEntries() {
@@ -502,9 +612,9 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         entries = raw ? JSON.parse(raw) : [];
         if (!Array.isArray(entries)) entries = [];
-        // Ensure muscle group exists on older entries
         entries.forEach(e => {
           if (!e.muscle) e.muscle = MUSCLE_MAP[e.exercise] || 'Other';
+          if (typeof e.calories !== 'number') e.calories = estimateCalories(e);
         });
       } catch (e) { entries = []; }
     }
@@ -531,6 +641,7 @@
             renderMuscleVolume();
           }
           if (btn.dataset.tab === 'data') updateDataInfo();
+          if (btn.dataset.tab === 'log') updateSessionCals();
         });
       });
     }
@@ -558,6 +669,7 @@
     function setupForm() {
       document.getElementById('entryForm').addEventListener('submit', e => {
         e.preventDefault();
+        saveProfile();
         const date = document.getElementById('date').value;
         const exercise = document.getElementById('exercise').value;
         const weight = parseFloat(document.getElementById('weight').value);
@@ -570,21 +682,39 @@
           return;
         }
 
-        entries.push({
+        const entry = {
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
           date, exercise, weight, sets, reps, notes,
           muscle: getMuscle(exercise),
           volume: sets * reps * weight,
           createdAt: new Date().toISOString()
-        });
+        };
+        entry.calories = estimateCalories(entry);
+
+        entries.push(entry);
         saveEntries();
         renderAll();
-        showToast('Entry saved!');
+        updateSessionCals();
+        showToast(`Entry saved! ~${entry.calories} kcal`);
         document.getElementById('entryForm').reset();
         setDefaultDate();
         document.querySelector('.weight-btn[data-weight="8.5"]:not(.rm-weight-btn)').click();
         document.getElementById('notes').value = '';
       });
+    }
+
+    function updateSessionCals() {
+      const today = new Date().toISOString().slice(0, 10);
+      const todayEntries = entries.filter(e => e.date === today);
+      const total = todayEntries.reduce((s, e) => s + (e.calories || estimateCalories(e)), 0);
+      const el = document.getElementById('sessionCals');
+      const val = document.getElementById('sessionCalsValue');
+      if (todayEntries.length > 0) {
+        el.style.display = 'block';
+        val.textContent = total;
+      } else {
+        el.style.display = 'none';
+      }
     }
 
     // ===== MUSCLE VOLUME =====
@@ -602,8 +732,6 @@
       });
 
       const sorted = Object.entries(byMuscle).sort((a, b) => b[1].volume - a[1].volume);
-
-      // Quick stats (top muscles)
       const statsEl = document.getElementById('muscleStats');
       if (sorted.length === 0) {
         statsEl.innerHTML = '';
@@ -853,15 +981,18 @@
       const totalVol = filtered.reduce((s, e) => s + e.volume, 0);
       const totalSets = filtered.reduce((s, e) => s + e.sets, 0);
       const totalReps = filtered.reduce((s, e) => s + e.sets * e.reps, 0);
+      const totalCals = filtered.reduce((s, e) => s + (e.calories || estimateCalories(e)), 0);
       document.getElementById('historyStats').innerHTML = `
         <div class="stat"><div class="value">${filtered.length}</div><div class="label">Entries</div></div>
         <div class="stat"><div class="value">${totalSets}</div><div class="label">Total Sets</div></div>
         <div class="stat"><div class="value">${totalReps}</div><div class="label">Total Reps</div></div>
         <div class="stat"><div class="value">${Math.round(totalVol).toLocaleString()}</div><div class="label">Volume (kg)</div></div>
+        <div class="stat cals-stat"><div class="value">${totalCals}</div><div class="label">Est. kcal</div></div>
       `;
 
       filtered.forEach(e => {
         const muscle = e.muscle || getMuscle(e.exercise);
+        const cals = e.calories || estimateCalories(e);
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${formatDate(e.date)}</td>
@@ -870,6 +1001,7 @@
           <td>${e.weight} kg</td>
           <td>${e.sets} × ${e.reps}</td>
           <td class="volume">${Math.round(e.volume).toLocaleString()}</td>
+          <td class="cals">${cals}</td>
           <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(e.notes || '')}">${escapeHtml(e.notes || '—')}</td>
           <td class="actions">
             <button class="btn btn-danger btn-sm" data-id="${e.id}" title="Delete">✕</button>
@@ -884,6 +1016,7 @@
             entries = entries.filter(e => e.id !== btn.dataset.id);
             saveEntries();
             renderAll();
+            updateSessionCals();
             showToast('Entry deleted');
           }
         });
@@ -913,24 +1046,33 @@
       const metric = document.getElementById('graphMetric').value;
       const byDate = {};
       entries.filter(e => !exercise || e.exercise === exercise).forEach(e => {
-        if (!byDate[e.date]) byDate[e.date] = { volume: 0, reps: 0, sets: 0 };
+        if (!byDate[e.date]) byDate[e.date] = { volume: 0, reps: 0, sets: 0, calories: 0 };
         byDate[e.date].volume += e.volume;
         byDate[e.date].reps += e.sets * e.reps;
         byDate[e.date].sets += e.sets;
+        byDate[e.date].calories += (e.calories || estimateCalories(e));
       });
       const dates = Object.keys(byDate).sort();
       const values = dates.map(d => byDate[d][metric]);
-      const labels = { volume: 'Total Volume (kg)', reps: 'Total Reps', sets: 'Total Sets' };
+      const labels = {
+        volume: 'Total Volume (kg)',
+        reps: 'Total Reps',
+        sets: 'Total Sets',
+        calories: 'Estimated Calories (kcal)'
+      };
       const ctx = document.getElementById('progressChart').getContext('2d');
       if (progressChart) progressChart.destroy();
+      const isCals = metric === 'calories';
       progressChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: dates.map(d => formatDate(d)),
           datasets: [{
             label: labels[metric], data: values,
-            borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.15)',
-            fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#9b59b6'
+            borderColor: isCals ? '#f1c40f' : '#9b59b6',
+            backgroundColor: isCals ? 'rgba(241,196,15,0.15)' : 'rgba(155,89,182,0.15)',
+            fill: true, tension: 0.3, pointRadius: 4,
+            pointBackgroundColor: isCals ? '#f1c40f' : '#9b59b6'
           }]
         },
         options: {
@@ -978,14 +1120,14 @@
       });
       const sorted = Object.entries(byMuscle).sort((a, b) => b[1] - a[1]);
       const colors = [
-        'rgba(231, 76, 60, 0.75)',   // Chest - red
-        'rgba(52, 152, 219, 0.75)',  // Back - blue
-        'rgba(241, 196, 15, 0.75)',  // Shoulders - yellow
-        'rgba(46, 204, 113, 0.75)',  // Biceps - green
-        'rgba(155, 89, 182, 0.75)',  // Triceps - purple
-        'rgba(230, 126, 34, 0.75)',  // Legs - orange
-        'rgba(26, 188, 156, 0.75)',  // Traps - teal
-        'rgba(149, 165, 166, 0.75)'  // Other - grey
+        'rgba(231, 76, 60, 0.75)',
+        'rgba(52, 152, 219, 0.75)',
+        'rgba(241, 196, 15, 0.75)',
+        'rgba(46, 204, 113, 0.75)',
+        'rgba(155, 89, 182, 0.75)',
+        'rgba(230, 126, 34, 0.75)',
+        'rgba(26, 188, 156, 0.75)',
+        'rgba(149, 165, 166, 0.75)'
       ];
       const ctx = document.getElementById('muscleChart').getContext('2d');
       if (muscleChart) muscleChart.destroy();
@@ -1013,7 +1155,13 @@
 
     function setupExportImport() {
       document.getElementById('exportBtn').addEventListener('click', () => {
-        const data = { version: 1, type: 'dumbbell', exportedAt: new Date().toISOString(), entries };
+        const data = {
+          version: 2,
+          type: 'dumbbell',
+          exportedAt: new Date().toISOString(),
+          profile: saveProfile(),
+          entries
+        };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1031,15 +1179,25 @@
           const text = await file.text();
           const data = JSON.parse(text);
           let imported = Array.isArray(data) ? data : (data.entries || []);
+          if (data.profile) {
+            if (data.profile.age) document.getElementById('userAge').value = data.profile.age;
+            if (data.profile.height) document.getElementById('userHeight').value = data.profile.height;
+            if (data.profile.weight) document.getElementById('userWeight').value = data.profile.weight;
+            saveProfile();
+          }
           imported = imported.filter(e => e.date && e.exercise && typeof e.weight === 'number' &&
             typeof e.sets === 'number' && typeof e.reps === 'number')
-            .map(e => ({
-              id: e.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-              date: e.date, exercise: e.exercise, weight: e.weight, sets: e.sets, reps: e.reps,
-              notes: e.notes || '', muscle: e.muscle || getMuscle(e.exercise),
-              volume: e.volume || (e.sets * e.reps * e.weight),
-              createdAt: e.createdAt || new Date().toISOString()
-            }));
+            .map(e => {
+              const entry = {
+                id: e.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+                date: e.date, exercise: e.exercise, weight: e.weight, sets: e.sets, reps: e.reps,
+                notes: e.notes || '', muscle: e.muscle || getMuscle(e.exercise),
+                volume: e.volume || (e.sets * e.reps * e.weight),
+                createdAt: e.createdAt || new Date().toISOString()
+              };
+              entry.calories = e.calories || estimateCalories(entry);
+              return entry;
+            });
           if (imported.length === 0) { showToast('No valid entries found', true); return; }
           const mode = confirm(`Found ${imported.length} entries.\n\nOK = Merge\nCancel = Replace all`);
           if (mode) {
@@ -1048,6 +1206,7 @@
           } else entries = imported;
           saveEntries();
           renderAll();
+          updateSessionCals();
           showToast(`Imported ${imported.length} entries`);
         } catch (err) { showToast('Import failed: invalid JSON', true); }
         e.target.value = '';
@@ -1058,6 +1217,7 @@
           entries = [];
           saveEntries();
           renderAll();
+          updateSessionCals();
           showToast('All data cleared');
         }
       });
@@ -1073,7 +1233,7 @@
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.className = 'toast show' + (isError ? ' error' : '');
-      setTimeout(() => t.classList.remove('show'), 2500);
+      setTimeout(() => t.classList.remove('show'), 2800);
     }
 
     init();
